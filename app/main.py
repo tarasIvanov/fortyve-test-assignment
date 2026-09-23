@@ -45,9 +45,8 @@ async def handle_validation_error(_: Request, error: RequestValidationError) -> 
     )
 
 
-@app.get("/health", tags=["service"])
+@app.get("/health", include_in_schema=False)
 async def health() -> JSONResponse:
-    """Перевіряє не лише те, що процес живий, а й що з'єднання з БД робоче."""
     try:
         async with session_factory() as session:
             await session.execute(text("SELECT 1"))

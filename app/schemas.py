@@ -10,8 +10,6 @@ Position = tuple[float, float]
 
 
 class PolygonGeometry(BaseModel):
-    """GeoJSON-полігон. Координати в порядку [довгота, широта], як у специфікації GeoJSON."""
-
     type: Literal["Polygon"]
     coordinates: list[list[Position]]
 
@@ -49,14 +47,11 @@ class FieldCreate(BaseModel):
                         [
                             [30.5234, 50.4501],
                             [30.5334, 50.4501],
-                            [30.5334, 50.4601],
-                            [30.5234, 50.4601],
-                            [30.5234, 50.4501],
                         ]
                     ],
                 },
                 "crop": "Пшениця",
-                "owner": "Іванов І.І.",
+                "owner": "Іванов Т.Ю.",
             }
         }
     )
@@ -68,7 +63,18 @@ class FieldCreate(BaseModel):
 
 
 class FieldSummary(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": "347e88f1-e3fc-4434-bff1-32cb0105b084",
+                "name": "Поле №1 - Пшениця",
+                "area_ha": 78.99,
+                "crop": "Пшениця",
+                "owner": "Іванов Т.Ю.",
+            }
+        },
+    )
 
     id: UUID
     name: str
@@ -78,11 +84,54 @@ class FieldSummary(BaseModel):
 
 
 class FieldDetail(FieldSummary):
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": "347e88f1-e3fc-4434-bff1-32cb0105b084",
+                "name": "Поле №1 - Пшениця",
+                "area_ha": 78.99,
+                "crop": "Пшениця",
+                "owner": "Іванов Т.Ю.",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [30.5234, 50.4501],
+                            [30.5334, 50.4501],
+                            [30.5334, 50.4601],
+                            [30.5234, 50.4601],
+                            [30.5234, 50.4501],
+                        ]
+                    ],
+                },
+                "created_at": "2026-09-23T18:32:09.686904Z",
+            }
+        },
+    )
+
     geometry: PolygonGeometry
     created_at: datetime
 
 
 class FieldListResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "total": 150,
+                "fields": [
+                    {
+                        "id": "347e88f1-e3fc-4434-bff1-32cb0105b084",
+                        "name": "Поле №1 - Пшениця",
+                        "area_ha": 78.99,
+                        "crop": "Пшениця",
+                        "owner": "Іванов Т.Ю.",
+                    }
+                ],
+            }
+        }
+    )
+
     total: int
     fields: list[FieldSummary]
 
@@ -97,11 +146,39 @@ class FieldMatch(FieldSummary):
 
 
 class FindByPointResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "query_point": {"lon": 30.525, "lat": 50.455},
+                "fields": [
+                    {
+                        "id": "347e88f1-e3fc-4434-bff1-32cb0105b084",
+                        "name": "Поле №1 - Пшениця",
+                        "area_ha": 78.99,
+                        "crop": "Пшениця",
+                        "owner": "Іванов Т.Ю.",
+                        "distance_to_center_m": 241.71,
+                    }
+                ],
+                "query_time_ms": 0.34,
+            }
+        }
+    )
+
     query_point: QueryPoint
     fields: list[FieldMatch]
     query_time_ms: float
 
 
 class ErrorResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "detail": "Полігон невалідний: Self-intersection[30.525 50.455]",
+                "code": "invalid_geometry",
+            }
+        }
+    )
+
     detail: str
     code: str
