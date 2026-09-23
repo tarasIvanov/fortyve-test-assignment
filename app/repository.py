@@ -13,6 +13,19 @@ POINT_SQL = "ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)"
 
 SQUARE_METERS_PER_HECTARE = 10_000
 
+# Головний запит завдання. Винесений у константу, щоб бенчмарк міряв рівно те саме,
+# що виконує API, і вони не розійшлися з часом.
+FIND_BY_POINT_SQL = text(
+    f"""
+    SELECT id, name, area_ha, crop, owner,
+           ST_Distance(ST_Centroid(geom)::geography, {POINT_SQL}::geography)
+               AS distance_to_center_m
+    FROM fields
+    WHERE ST_Contains(geom, {POINT_SQL})
+    ORDER BY distance_to_center_m
+    """
+)
+
 
 @dataclass(frozen=True)
 class GeometryInspection:
@@ -129,17 +142,9 @@ class FieldRepository:
         Перша частина — пошук по GiST-індексу за bounding box (груба фаза), друга —
         точна перевірка належності лише для кількох кандидатів (точна фаза).
         """
-        statement = text(
-            f"""
-            SELECT id, name, area_ha, crop, owner,
-                   ST_Distance(ST_Centroid(geom)::geography, {POINT_SQL}::geography)
-                       AS distance_to_center_m
-            FROM fields
-            WHERE ST_Contains(geom, {POINT_SQL})
-            ORDER BY distance_to_center_m
-            """
+        result = await self._session.execute(
+            FIND_BY_POINT_SQL, {"lon": longitude, "lat": latitude}
         )
-        result = await self._session.execute(statement, {"lon": longitude, "lat": latitude})
         return list(result.all())
 
 
