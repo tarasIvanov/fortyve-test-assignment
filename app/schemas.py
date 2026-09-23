@@ -39,6 +39,28 @@ class PolygonGeometry(BaseModel):
 
 
 class FieldCreate(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "Поле №1 - Пшениця",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [30.5234, 50.4501],
+                            [30.5334, 50.4501],
+                            [30.5334, 50.4601],
+                            [30.5234, 50.4601],
+                            [30.5234, 50.4501],
+                        ]
+                    ],
+                },
+                "crop": "Пшениця",
+                "owner": "Іванов І.І.",
+            }
+        }
+    )
+
     name: str = Field(min_length=1, max_length=255)
     geometry: PolygonGeometry
     crop: str = Field(min_length=1, max_length=100)
