@@ -77,7 +77,6 @@ class FieldRepository:
                 },
             )
         ).one()
-        await self._session.commit()
         return row
 
     async def get_by_id(self, field_id: UUID) -> Row[Any] | None:
@@ -102,8 +101,9 @@ class FieldRepository:
     ) -> list[Row[Any]]:
         """Сторінка списку та загальна кількість — одним запитом.
 
-        COUNT(*) OVER () рахує рядки, що пройшли фільтри, ще до LIMIT. Це економить
-        другий похід до БД і гарантує, що total узгоджений із поверненою сторінкою.
+        Кількість рахується окремою гілкою CTE, а не віконною функцією над сторінкою:
+        інакше при offset за межами результату сторінка порожня і total втрачається.
+        LEFT JOIN LATERAL гарантує, що рядок із total повертається завжди.
         """
         conditions: list[str] = []
         parameters: dict[str, Any] = {"limit": limit, "offset": offset}
@@ -126,11 +126,20 @@ class FieldRepository:
 
         statement = text(
             f"""
-            SELECT id, name, area_ha, crop, owner, COUNT(*) OVER () AS total
-            FROM fields
-            {where_clause}
-            ORDER BY created_at DESC, id
-            LIMIT :limit OFFSET :offset
+            WITH filtered AS (
+                SELECT id, name, area_ha, crop, owner, created_at
+                FROM fields
+                {where_clause}
+            )
+            SELECT (SELECT count(*) FROM filtered) AS total,
+                   page.id, page.name, page.area_ha, page.crop, page.owner
+            FROM (SELECT 1) AS always_one_row
+            LEFT JOIN LATERAL (
+                SELECT id, name, area_ha, crop, owner
+                FROM filtered
+                ORDER BY created_at DESC, id
+                LIMIT :limit OFFSET :offset
+            ) AS page ON TRUE
             """
         )
         return list((await self._session.execute(statement, parameters)).all())

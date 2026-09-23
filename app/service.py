@@ -1,4 +1,7 @@
+from typing import Any
 from uuid import UUID
+
+from sqlalchemy import Row
 
 from app.exceptions import (
     AreaTooSmallError,
@@ -10,6 +13,18 @@ from app.repository import FieldRepository, parse_geometry
 from app.schemas import FieldCreate, FieldDetail, FieldMatch, FieldSummary
 
 MIN_AREA_HA = 0.1
+
+
+def _field_detail(row: Row[Any]) -> FieldDetail:
+    return FieldDetail(
+        id=row.id,
+        name=row.name,
+        geometry=parse_geometry(row.geometry),
+        area_ha=row.area_ha,
+        crop=row.crop,
+        owner=row.owner,
+        created_at=row.created_at,
+    )
 
 
 class FieldService:
@@ -43,30 +58,14 @@ class FieldService:
             owner=payload.owner,
         )
 
-        return FieldDetail(
-            id=row.id,
-            name=row.name,
-            geometry=parse_geometry(row.geometry),
-            area_ha=row.area_ha,
-            crop=row.crop,
-            owner=row.owner,
-            created_at=row.created_at,
-        )
+        return _field_detail(row)
 
     async def get_field(self, field_id: UUID) -> FieldDetail:
         row = await self._repository.get_by_id(field_id)
         if row is None:
             raise FieldNotFoundError(f"Поле {field_id} не знайдено")
 
-        return FieldDetail(
-            id=row.id,
-            name=row.name,
-            geometry=parse_geometry(row.geometry),
-            area_ha=row.area_ha,
-            crop=row.crop,
-            owner=row.owner,
-            created_at=row.created_at,
-        )
+        return _field_detail(row)
 
     async def list_fields(
         self,
@@ -86,8 +85,12 @@ class FieldService:
             limit=limit,
             offset=offset,
         )
-        total = rows[0].total if rows else 0
-        return total, [FieldSummary.model_validate(row) for row in rows]
+
+        total = rows[0].total
+        # Порожня сторінка (offset за межами результату) повертає єдиний рядок
+        # із загальною кількістю і порожніми колонками поля.
+        fields = [FieldSummary.model_validate(row) for row in rows if row.id is not None]
+        return total, fields
 
     async def find_by_point(self, longitude: float, latitude: float) -> list[FieldMatch]:
         rows = await self._repository.find_by_point(longitude, latitude)

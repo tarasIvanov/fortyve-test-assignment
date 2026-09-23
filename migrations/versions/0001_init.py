@@ -25,7 +25,6 @@ def upgrade() -> None:
         """
     )
 
-    op.execute("CREATE INDEX fields_geom_gist ON fields USING GIST (geom)")
     op.execute("CREATE INDEX fields_crop_idx  ON fields (crop)")
     op.execute("CREATE INDEX fields_owner_idx ON fields (owner)")
     op.execute("CREATE INDEX fields_area_idx  ON fields (area_ha)")

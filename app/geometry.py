@@ -37,6 +37,9 @@ def meters_to_degrees(meters: float, latitude: float) -> tuple[float, float]:
     Градус широти майже сталий (~111 км), а градус довготи звужується до полюсів
     пропорційно косинусу широти: на 50° він приблизно вдвічі коротший за екваторіальний.
     """
+    if abs(latitude) >= MAX_LATITUDE:
+        raise ValueError("Довжина градуса довготи на полюсі дорівнює нулю")
+
     degrees_latitude = meters / METERS_PER_DEGREE_LATITUDE
     degrees_longitude = meters / (METERS_PER_DEGREE_LATITUDE * math.cos(math.radians(latitude)))
     return degrees_longitude, degrees_latitude
