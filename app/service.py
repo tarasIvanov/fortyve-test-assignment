@@ -1,3 +1,4 @@
+import time
 from typing import Any
 from uuid import UUID
 
@@ -34,8 +35,7 @@ class FieldService:
     async def create_field(self, payload: FieldCreate) -> FieldDetail:
         if len(payload.geometry.coordinates) != 1:
             raise UnsupportedGeometryError(
-                "Підтримуються лише прості полігони з одним кільцем: "
-                "дірки (inner rings) наразі не підтримуються"
+                "Підтримуються лише прості полігони з одним кільцем: дірки (inner rings) наразі не підтримуються"
             )
 
         geojson = payload.geometry.model_dump_json()
@@ -91,6 +91,11 @@ class FieldService:
         fields = [FieldSummary.model_validate(row) for row in rows if row.id is not None]
         return total, fields
 
-    async def find_by_point(self, longitude: float, latitude: float) -> list[FieldMatch]:
+    async def find_by_point(
+        self, longitude: float, latitude: float
+    ) -> tuple[list[FieldMatch], float]:
+        started_at = time.perf_counter()
         rows = await self._repository.find_by_point(longitude, latitude)
-        return [FieldMatch.model_validate(row) for row in rows]
+        query_time_ms = (time.perf_counter() - started_at) * 1000
+
+        return [FieldMatch.model_validate(row) for row in rows], round(query_time_ms, 2)
