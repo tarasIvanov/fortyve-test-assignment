@@ -52,11 +52,10 @@ def test_database_url() -> str:
 
 @pytest_asyncio.fixture
 async def session(test_database_url: str) -> AsyncIterator[AsyncSession]:
-    """Сесія всередині транзакції, яка відкочується після тесту.
+    """Сесія в транзакції, яка відкочується після тесту.
 
-    join_transaction_mode="create_savepoint" робить так, що commit усередині
-    репозиторію закриває лише savepoint, а зовнішня транзакція все одно
-    відкочується — база лишається чистою без TRUNCATE між тестами.
+    create_savepoint робить коміт застосунку savepoint-ом, тож зовнішній відкат
+    лишає базу чистою без TRUNCATE між тестами.
     """
     engine = create_async_engine(test_database_url, poolclass=NullPool)
 

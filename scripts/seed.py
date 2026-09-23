@@ -75,7 +75,7 @@ def generate_batch(
             center_longitude = center[0] + shift_longitude * math.cos(shift_angle)
             center_latitude = center[1] + shift_latitude * math.sin(shift_angle)
         else:
-            region_name, region_longitude, region_latitude = rng.choice(REGIONAL_CENTERS)
+            _, region_longitude, region_latitude = rng.choice(REGIONAL_CENTERS)
             center_longitude = region_longitude + rng.uniform(-REGION_SPREAD_DEGREES, REGION_SPREAD_DEGREES)
             center_latitude = region_latitude + rng.uniform(-REGION_SPREAD_DEGREES, REGION_SPREAD_DEGREES)
 

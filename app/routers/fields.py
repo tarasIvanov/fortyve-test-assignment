@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_session
 from app.repository import FieldRepository
 from app.schemas import (
+    ErrorResponse,
     FieldCreate,
     FieldDetail,
     FieldListResponse,
@@ -15,7 +16,11 @@ from app.schemas import (
 )
 from app.service import FieldService
 
-router = APIRouter(prefix="/api/fields", tags=["fields"])
+router = APIRouter(
+    prefix="/api/fields",
+    tags=["fields"],
+    responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+)
 
 MAX_PAGE_SIZE = 100
 DEFAULT_PAGE_SIZE = 20
