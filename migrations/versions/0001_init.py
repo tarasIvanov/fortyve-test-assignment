@@ -1,8 +1,3 @@
-"""Початкова схема: розширення PostGIS, таблиця fields, індекси.
-
-Revision ID: 0001
-Revises:
-"""
 from alembic import op
 
 revision = "0001"
@@ -30,8 +25,6 @@ def upgrade() -> None:
         """
     )
 
-    # GiST зберігає bounding box кожного полігона в R-дереві: пошук точки
-    # спускається лише в ті гілки, чий прямокутник її накриває.
     op.execute("CREATE INDEX fields_geom_gist ON fields USING GIST (geom)")
     op.execute("CREATE INDEX fields_crop_idx  ON fields (crop)")
     op.execute("CREATE INDEX fields_owner_idx ON fields (owner)")

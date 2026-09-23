@@ -10,10 +10,14 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fields -d fields"]
+      # -h 127.0.0.1 принципово: під час першої ініціалізації Postgres піднімає
+      # тимчасовий сервер, який слухає лише unix-сокет. Без прив'язки до TCP
+      # healthcheck проходить зарано, і застосунок стартує в порожнечу.
+      test: ["CMD-SHELL", "pg_isready -U fields -d fields -h 127.0.0.1 -p 5432"]
       interval: 3s
       timeout: 3s
-      retries: 20
+      retries: 30
+      start_period: 10s
 
   api:
     build: .
@@ -24,6 +28,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    restart: on-failure
     volumes:
       - .:/app
 
