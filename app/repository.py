@@ -8,13 +8,11 @@ from uuid import UUID
 from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# Точка запиту в системі координат WGS84 (SRID 4326).
 POINT_SQL = "ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)"
 
 SQUARE_METERS_PER_HECTARE = 10_000
 
-# Головний запит завдання. Винесений у константу, щоб бенчмарк міряв рівно те саме,
-# що виконує API, і вони не розійшлися з часом.
+# Винесено в константу, щоб бенчмарк міряв рівно той запит, що виконує API.
 FIND_BY_POINT_SQL = text(
     f"""
     SELECT id, name, area_ha, crop, owner,
@@ -39,11 +37,7 @@ class FieldRepository:
         self._session = session
 
     async def inspect_geometry(self, geojson: str) -> GeometryInspection:
-        """Перевіряє геометрію та рахує площу до вставки — одним запитом.
-
-        Площа рахується через каст у geography: у градусах вона фізичного змісту не має,
-        а geography дає м² на еліпсоїді WGS84.
-        """
+        """Перевіряє геометрію та рахує площу до вставки — одним запитом."""
         statement = text(
             f"""
             SELECT ST_IsValid(geom)       AS is_valid,
@@ -99,12 +93,7 @@ class FieldRepository:
         limit: int,
         offset: int,
     ) -> list[Row[Any]]:
-        """Сторінка списку та загальна кількість — одним запитом.
-
-        Кількість рахується окремою гілкою CTE, а не віконною функцією над сторінкою:
-        інакше при offset за межами результату сторінка порожня і total втрачається.
-        LEFT JOIN LATERAL гарантує, що рядок із total повертається завжди.
-        """
+        """Сторінка списку та загальна кількість — одним запитом."""
         conditions: list[str] = []
         parameters: dict[str, Any] = {"limit": limit, "offset": offset}
 
@@ -145,12 +134,7 @@ class FieldRepository:
         return list((await self._session.execute(statement, parameters)).all())
 
     async def find_by_point(self, longitude: float, latitude: float) -> list[Row[Any]]:
-        """Головний запит: які поля містять задану точку.
-
-        ST_Contains розкривається планувальником у geom && point AND _ST_Contains(geom, point).
-        Перша частина — пошук по GiST-індексу за bounding box (груба фаза), друга —
-        точна перевірка належності лише для кількох кандидатів (точна фаза).
-        """
+        """Головний запит: які поля містять задану точку."""
         result = await self._session.execute(
             FIND_BY_POINT_SQL, {"lon": longitude, "lat": latitude}
         )

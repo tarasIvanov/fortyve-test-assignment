@@ -18,8 +18,8 @@ class Field(Base):
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    # spatial_index=False: GiST-індекс оголошений нижче явно, з тим самим іменем,
-    # що й у міграції — інакше alembic autogenerate вирішив би, що індекс зайвий.
+    # Індекси й типи мають точно збігатися з міграцією, інакше autogenerate
+    # згенерує міграцію, що їх «виправляє».
     geom: Mapped[str] = mapped_column(
         Geometry(geometry_type="POLYGON", srid=4326, spatial_index=False), nullable=False
     )

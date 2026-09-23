@@ -14,9 +14,7 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-# PostGIS створює власні таблиці (spatial_ref_sys, схеми tiger і topology).
-# Без цього фільтра alembic autogenerate вирішив би, що вони зайві, і згенерував
-# міграцію, яка їх видаляє.
+# Без цього фільтра autogenerate згенерував би видалення системних таблиць PostGIS.
 POSTGIS_SCHEMAS = {"tiger", "tiger_data", "topology"}
 
 

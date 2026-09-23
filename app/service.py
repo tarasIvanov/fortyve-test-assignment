@@ -87,8 +87,7 @@ class FieldService:
         )
 
         total = rows[0].total
-        # Порожня сторінка (offset за межами результату) повертає єдиний рядок
-        # із загальною кількістю і порожніми колонками поля.
+        # Порожня сторінка повертає єдиний рядок із total і порожніми колонками.
         fields = [FieldSummary.model_validate(row) for row in rows if row.id is not None]
         return total, fields
 

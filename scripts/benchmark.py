@@ -20,21 +20,18 @@ from sqlalchemy.pool import NullPool
 from app.config import settings
 from app.repository import FIND_BY_POINT_SQL
 
-# Власний engine із вимкненим кешем підготовлених запитів.
-# Інакше asyncpg перевикористав би план, побудований ще з увімкненим індексом,
-# і другий прогін міряв би не те, що ми думаємо.
+# Кеш підготовлених запитів вимкнено: інакше asyncpg перевикористає план,
+# побудований ще з індексом, і другий прогін виміряє не те, що треба.
 engine = create_async_engine(
     settings.database_url,
     poolclass=NullPool,
     connect_args={"statement_cache_size": 0},
 )
 
-# Частка точок, узятих із центрів наявних полів: вони гарантовано в щось влучають.
 HIT_POINT_RATIO = 0.7
 
 UKRAINE_BOUNDS = {"min_lon": 22.1, "max_lon": 40.2, "min_lat": 44.4, "max_lat": 52.4}
 
-# DISCARD PLANS додатково скидає плани, які PostgreSQL уже закешував для цієї сесії.
 DISABLE_INDEX_SQL = [
     "SET enable_indexscan = off",
     "SET enable_bitmapscan = off",

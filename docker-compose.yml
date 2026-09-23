@@ -10,9 +10,6 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      # -h 127.0.0.1 принципово: під час першої ініціалізації Postgres піднімає
-      # тимчасовий сервер, який слухає лише unix-сокет. Без прив'язки до TCP
-      # healthcheck проходить зарано, і застосунок стартує в порожнечу.
       test:
         [
           "CMD-SHELL",

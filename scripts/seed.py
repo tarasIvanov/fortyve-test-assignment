@@ -15,7 +15,6 @@ from sqlalchemy import text
 from app.db import engine
 from app.geometry import build_closed_ring, meters_to_degrees, ring_to_wkt
 
-# Центри областей: поля групуються навколо них, як у реальності, а не рівномірним шумом.
 REGIONAL_CENTERS = [
     ("Київщина", 30.52, 50.45),
     ("Львівщина", 24.03, 49.84),
@@ -46,8 +45,7 @@ MIN_VERTICES = 6
 MAX_VERTICES = 12
 RADIUS_JITTER = 0.3
 OVERLAP_PROBABILITY = 0.12
-# Частка радіуса, на яку зсувається перекрите поле. Має бути меншою за (1 - RADIUS_JITTER):
-# тоді центр попереднього поля гарантовано лишається всередині нового, отже вони перетинаються.
+# Має лишатися меншим за (1 - RADIUS_JITTER), інакше перетин не гарантований.
 OVERLAP_SHIFT_RATIO = 0.6
 BATCH_SIZE = 1000
 
@@ -71,8 +69,6 @@ def generate_batch(
         overlaps_previous = center is not None and rng.random() < OVERLAP_PROBABILITY
 
         if overlaps_previous:
-            # Зсув рахується від радіуса цього ж поля, тому перетин із попереднім
-            # гарантований навіть для найменших полів.
             shift_angle = rng.uniform(0.0, 2 * math.pi)
             shift_meters = rng.uniform(0.0, radius_meters * OVERLAP_SHIFT_RATIO)
             shift_longitude, shift_latitude = meters_to_degrees(shift_meters, center[1])
