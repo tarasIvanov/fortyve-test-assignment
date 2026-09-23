@@ -96,8 +96,7 @@ def test_generated_vertices_go_counterclockwise_without_self_intersection():
         for longitude, latitude in ring[:-1]
     ]
 
-    # Кути зростають по колу, тому спадання може статися рівно один раз — там,
-    # де послідовність перетинає нуль.
+    # Кути зростають по колу, тому спадання може статися рівно один раз — там, де послідовність перетинає нуль.
     descents = sum(
         1 for index in range(len(angles)) if angles[index] > angles[(index + 1) % len(angles)]
     )
