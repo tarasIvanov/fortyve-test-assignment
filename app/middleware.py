@@ -7,8 +7,6 @@ INTERNAL_SERVER_ERROR = 500
 
 
 class AccessLogMiddleware:
-    """Чиста ASGI-мідлвара: метод, шлях, статус і тривалість кожного запиту."""
-
     def __init__(self, app) -> None:
         self.app = app
 

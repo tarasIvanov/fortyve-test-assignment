@@ -1,6 +1,4 @@
 class DomainError(Exception):
-    """Помилка бізнес-рівня. Про HTTP-коди знає лише шар застосунку."""
-
     code = "internal_error"
 
     def __init__(self, message: str) -> None:

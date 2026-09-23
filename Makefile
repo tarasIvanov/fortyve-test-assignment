@@ -24,30 +24,17 @@ test:
 bench:
 	docker compose exec -T api python -m scripts.benchmark --points $(POINTS)
 
-# План виконання головного запиту на поточному стані бази.
-explain:
-	docker compose exec -T db psql -U postgres -d fields -c "\
-	EXPLAIN (ANALYZE, BUFFERS) \
-	SELECT id, name FROM fields \
-	WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint(30.52, 50.45), 4326));"
-
-# Зняти й повернути GiST-індекс: індекс живе в окремій міграції 0002.
 index-off:
 	docker compose exec -T api alembic downgrade 0001
-	@echo "GiST-індекс знято. make explain покаже Seq Scan"
 
 index-on:
 	docker compose exec -T api alembic upgrade head
-	@echo "GiST-індекс повернуто"
 
 logs:
 	docker compose logs -f api
 
 psql:
 	docker compose exec db psql -U postgres -d fields
-
-down:
-	docker compose down
 
 # Разом із томом даних.
 clean:

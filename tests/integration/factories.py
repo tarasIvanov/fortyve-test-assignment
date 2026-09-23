@@ -22,7 +22,7 @@ def field_payload(
     name: str = "Тестове поле",
     geometry: dict | None = None,
     crop: str = "Пшениця",
-    owner: str = "Іванов І.І.",
+    owner: str = "Іванов Т.Ю.",
 ) -> dict:
     return {
         "name": name,
