@@ -16,5 +16,16 @@ session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:
+    """Одна транзакція на HTTP-запит.
+
+    Коміт робиться тут, а не в репозиторії: інакше репозиторій керував би межами
+    транзакції і кілька записів у межах однієї бізнес-операції не можна було б
+    зробити атомарно.
+    """
     async with session_factory() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise

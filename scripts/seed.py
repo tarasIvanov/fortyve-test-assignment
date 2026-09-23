@@ -6,13 +6,14 @@
 
 import argparse
 import asyncio
+import math
 import random
 import time
 
 from sqlalchemy import text
 
 from app.db import engine
-from app.geometry import build_closed_ring, ring_to_wkt
+from app.geometry import build_closed_ring, meters_to_degrees, ring_to_wkt
 
 # Центри областей: поля групуються навколо них, як у реальності, а не рівномірним шумом.
 REGIONAL_CENTERS = [
@@ -45,18 +46,16 @@ MIN_VERTICES = 6
 MAX_VERTICES = 12
 RADIUS_JITTER = 0.3
 OVERLAP_PROBABILITY = 0.12
+# Частка радіуса, на яку зсувається перекрите поле. Має бути меншою за (1 - RADIUS_JITTER):
+# тоді центр попереднього поля гарантовано лишається всередині нового, отже вони перетинаються.
+OVERLAP_SHIFT_RATIO = 0.6
 BATCH_SIZE = 1000
 
 INSERT_SQL = text(
     """
     INSERT INTO fields (name, geom, area_ha, crop, owner)
-    VALUES (
-        :name,
-        ST_GeomFromText(:wkt, 4326),
-        ST_Area(ST_GeomFromText(:wkt, 4326)::geography) / 10000,
-        :crop,
-        :owner
-    )
+    SELECT :name, geom, ST_Area(geom::geography) / 10000, :crop, :owner
+    FROM (SELECT ST_GeomFromText(:wkt, 4326) AS geom) AS parsed
     """
 )
 
@@ -68,12 +67,17 @@ def generate_batch(
     center = previous_center
 
     for offset in range(size):
+        radius_meters = rng.uniform(MIN_RADIUS_METERS, MAX_RADIUS_METERS)
         overlaps_previous = center is not None and rng.random() < OVERLAP_PROBABILITY
 
         if overlaps_previous:
-            # Зсув менший за радіус поля гарантує перетин із попереднім.
-            center_longitude = center[0] + rng.uniform(-0.004, 0.004)
-            center_latitude = center[1] + rng.uniform(-0.004, 0.004)
+            # Зсув рахується від радіуса цього ж поля, тому перетин із попереднім
+            # гарантований навіть для найменших полів.
+            shift_angle = rng.uniform(0.0, 2 * math.pi)
+            shift_meters = rng.uniform(0.0, radius_meters * OVERLAP_SHIFT_RATIO)
+            shift_longitude, shift_latitude = meters_to_degrees(shift_meters, center[1])
+            center_longitude = center[0] + shift_longitude * math.cos(shift_angle)
+            center_latitude = center[1] + shift_latitude * math.sin(shift_angle)
         else:
             region_name, region_longitude, region_latitude = rng.choice(REGIONAL_CENTERS)
             center_longitude = region_longitude + rng.uniform(-REGION_SPREAD_DEGREES, REGION_SPREAD_DEGREES)
@@ -84,7 +88,7 @@ def generate_batch(
         ring = build_closed_ring(
             center_longitude=center_longitude,
             center_latitude=center_latitude,
-            radius_meters=rng.uniform(MIN_RADIUS_METERS, MAX_RADIUS_METERS),
+            radius_meters=radius_meters,
             vertex_count=rng.randint(MIN_VERTICES, MAX_VERTICES),
             radius_jitter=RADIUS_JITTER,
             rng=rng,

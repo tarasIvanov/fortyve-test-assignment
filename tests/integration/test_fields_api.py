@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from httpx import AsyncClient
 
-from tests.integration.conftest import field_payload, square_polygon
+from tests.integration.factories import field_payload, square_polygon
 
 
 async def test_field_is_created_with_calculated_area(client: AsyncClient):

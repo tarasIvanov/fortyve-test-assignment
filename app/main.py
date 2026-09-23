@@ -52,6 +52,7 @@ async def health() -> JSONResponse:
         async with session_factory() as session:
             await session.execute(text("SELECT 1"))
     except Exception:
+        logging.getLogger("app.health").exception("Перевірка з'єднання з БД не пройшла")
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"detail": "База даних недоступна", "code": "database_unavailable"},

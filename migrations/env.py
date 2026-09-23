@@ -14,6 +14,17 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+# PostGIS створює власні таблиці (spatial_ref_sys, схеми tiger і topology).
+# Без цього фільтра alembic autogenerate вирішив би, що вони зайві, і згенерував
+# міграцію, яка їх видаляє.
+POSTGIS_SCHEMAS = {"tiger", "tiger_data", "topology"}
+
+
+def include_object(object_, name, type_, reflected, compare_to) -> bool:
+    if type_ == "table":
+        return object_.schema not in POSTGIS_SCHEMAS and name in target_metadata.tables
+    return True
+
 
 def run_migrations_offline() -> None:
     context.configure(
@@ -21,13 +32,18 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()
 
 
 def do_run_migrations(connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+    )
     with context.begin_transaction():
         context.run_migrations()
 
