@@ -13,6 +13,8 @@ Coordinate = tuple[float, float]
 METERS_PER_DEGREE_LATITUDE = 111_320.0
 MIN_RING_POINTS = 4
 COORDINATE_PRECISION = 6
+# Зсув вершини в межах свого сектора. Менше 0.5 — кути гарантовано не міняються місцями.
+ANGLE_JITTER_RATIO = 0.35
 
 MIN_LONGITUDE, MAX_LONGITUDE = -180.0, 180.0
 MIN_LATITUDE, MAX_LATITUDE = -90.0, 90.0
@@ -50,13 +52,17 @@ def build_closed_ring(
 ) -> list[Coordinate]:
     """Будує замкнене кільце навколо центру.
 
-    Вершини розкидані по колу і відсортовані за кутом — саме сортування гарантує,
-    що межа не перетне сама себе, тобто полігон вийде валідним.
+    Коло ділиться на рівні сектори, і в кожному ставиться рівно одна вершина зі
+    зсувом у межах сектора. Це дає дві гарантії: кут монотонно зростає (межа не
+    перетинає сама себе) і вершини не злипаються після округлення координат.
+    Обидві потрібні, щоб полігон пройшов перевірку ST_IsValid.
     """
-    angles = sorted(rng.uniform(0.0, 2 * math.pi) for _ in range(vertex_count))
+    sector_angle = 2 * math.pi / vertex_count
+    max_angle_jitter = sector_angle * ANGLE_JITTER_RATIO
 
     ring: list[Coordinate] = []
-    for angle in angles:
+    for vertex_index in range(vertex_count):
+        angle = vertex_index * sector_angle + rng.uniform(-max_angle_jitter, max_angle_jitter)
         radius = radius_meters * rng.uniform(1.0 - radius_jitter, 1.0 + radius_jitter)
         degrees_longitude, degrees_latitude = meters_to_degrees(radius, center_latitude)
         ring.append(
