@@ -2,18 +2,22 @@ services:
   db:
     image: postgis/postgis:16-3.4
     environment:
-      POSTGRES_USER: fields
-      POSTGRES_PASSWORD: fields
-      POSTGRES_DB: fields
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-fields}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       # -h 127.0.0.1 принципово: під час першої ініціалізації Postgres піднімає
       # тимчасовий сервер, який слухає лише unix-сокет. Без прив'язки до TCP
       # healthcheck проходить зарано, і застосунок стартує в порожнечу.
-      test: ["CMD-SHELL", "pg_isready -U fields -d fields -h 127.0.0.1 -p 5432"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-fields} -h 127.0.0.1 -p 5432",
+        ]
       interval: 3s
       timeout: 3s
       retries: 30
@@ -22,9 +26,9 @@ services:
   api:
     build: .
     environment:
-      DATABASE_URL: postgresql+asyncpg://fields:fields@db:5432/fields
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-fields}
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
