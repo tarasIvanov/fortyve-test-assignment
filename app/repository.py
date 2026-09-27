@@ -134,7 +134,6 @@ class FieldRepository:
         return list((await self._session.execute(statement, parameters)).all())
 
     async def find_by_point(self, longitude: float, latitude: float) -> list[Row[Any]]:
-        """Головний запит: які поля містять задану точку."""
         result = await self._session.execute(
             FIND_BY_POINT_SQL, {"lon": longitude, "lat": latitude}
         )
